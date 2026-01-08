@@ -11,7 +11,7 @@
       "schematics": {},
       "root": "",
       "sourceRoot": "src",
-      "prefix": "app",
+      "prefix": "ory",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -25,6 +25,7 @@
               }
             ],
             "styles": [
+              "src/material-theme.scss",
               "src/styles.css"
             ]
           },

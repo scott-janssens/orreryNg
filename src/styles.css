@@ -1,1 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+    --mat-button-toggle-background-color: darkgray;
+    --mat-button-toggle-text-color: white;
+    --mat-radio-state-layer-size: auto;
+}
+
+body {
+    background-color: black;
+}
+
+.mat-mdc-radio-button {
+    margin: 8px;
+}
