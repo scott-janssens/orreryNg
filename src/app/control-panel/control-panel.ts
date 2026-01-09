@@ -23,15 +23,18 @@ import { Scaling } from '../scaling';
 })
 export class ControlPanel {
   ScalingEnum = Scaling;
-  dateControl = new FormControl(new Date(1972, 10, 7));
-  date = () => this.dateControl.value;
+  dateControl = new FormControl(new Date());
+  get date() { return this.dateControl.value; }
+  set date(d) { this.dateControl.setValue(d); }
+
   isActive = true;
-  timeScale = 1;
+  timeScale: number = 0;
+  timeDisplay = ['1:1', '1s = 1h', '1s = 1d', '1s = 1w', '1s = 1m'];
   zoomLevel = 1;
   scaling = Scaling.Linear;
   ScalingKeys = Object.keys(this.ScalingEnum).filter(k => isNaN(Number(k)));
 
-  constructor(private dialog: MatDialog) {}
+  constructor(private dialog: MatDialog) { }
 
   openAboutDialog() {
     this.dialog.open(AboutDialog, { width: '50%', panelClass: 'help-container' });

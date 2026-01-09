@@ -4,7 +4,7 @@
     </div>
     <div class="control-group">
         <label>Date: </label>
-        <input [matDatepicker]="dp" [formControl]="dateControl">
+        <input name="date-input" [matDatepicker]="dp" [formControl]="dateControl" style="font-size: 16px; width: 100px;">
         <mat-datepicker-toggle matSuffix [for]="dp"></mat-datepicker-toggle>
         <mat-datepicker #dp></mat-datepicker>
     </div>
@@ -17,18 +17,18 @@
         </mat-button-toggle>
     </mat-button-toggle-group>
     <div class="control-group">
-        <label>Time Scale: </label>
-        <mat-slider min="1" max="31557600">
-            <input name="freq-slider" matSliderThumb [(ngModel)]="timeScale">
+        <label>Time: </label>
+        <mat-slider min="0" max="4">
+            <input name="scale-slider" matSliderThumb [(ngModel)]="timeScale">
         </mat-slider>
-        {{timeScale}}x
+        <span style="width: 50px; text-align: center;">{{timeDisplay[timeScale]}}</span>
     </div>
     <div class="control-group">
         <label>Zoom: </label>
         <mat-slider min="0.1" max="100">
-            <input name="freq-slider" matSliderThumb [(ngModel)]="zoomLevel">
+            <input name="zoom-slider" matSliderThumb [(ngModel)]="zoomLevel">
         </mat-slider>
-        {{zoomLevel}}x
+        <span>{{zoomLevel}}x</span>
     </div>
     <div class="control-group">
         <label>Scaling: </label>
