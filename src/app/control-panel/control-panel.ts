@@ -1,9 +1,9 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Injectable } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormControl, ReactiveFormsModule, FormControlStatus } from '@angular/forms';
 import { MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatInputModule } from '@angular/material/input';
-import { MatNativeDateModule } from '@angular/material/core';
+import { MatNativeDateModule, DateAdapter, MAT_DATE_FORMATS } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -15,25 +15,37 @@ import { AboutDialog } from '../about-dialog/about-dialog';
 import { DisplayOptions } from '../display-options';
 import { NativeDateAdapter } from '@angular/material/core';
 
-// @Injectable()
-// export class CustomDateAdapter extends NativeDateAdapter {
-//   override parse(value: any): Date | null {
-//     if (typeof value === 'string' && value.length === 10) {
-//       const [year, month, day] = value.split('/').map(Number);
-//       if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-//         return new Date(year, month - 1, day);
-//       }
-//     }
-//     return null;
-//   }
+export const CUSTOM_DATE_FORMATS = {
+  parse: {
+    dateInput: 'YYYY/MM/DD',
+  },
+  display: {
+    dateInput: 'YYYY/MM/DD',
+    monthYearLabel: 'YYYY MMM',
+    dateA11yLabel: 'LL',
+    monthYearA11yLabel: 'YYYY MMMM',
+  },
+};
 
-//   override format(date: Date, displayFormat: Object): string {
-//     const day = ('00' + date.getDate()).slice(-2);
-//     const month = ('00' + (date.getMonth() + 1)).slice(-2);
-//     const year = date.getFullYear();
-//     return `${year}/${month}/${day}`;
-//   }
-// }
+@Injectable()
+export class CustomDateAdapter extends NativeDateAdapter {
+  override parse(value: any): Date | null {
+    if (typeof value === 'string' && value.length === 10) {
+      const [year, month, day] = value.split('/').map(Number);
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        return new Date(year, month - 1, day);
+      }
+    }
+    return null;
+  }
+
+  override format(date: Date, displayFormat: Object): string {
+    const day = ('00' + date.getDate()).slice(-2);
+    const month = ('00' + (date.getMonth() + 1)).slice(-2);
+    const year = date.getFullYear();
+    return `${year}/${month}/${day}`;
+  }
+}
 
 @Component({
   selector: 'ory-control-panel',
@@ -41,7 +53,10 @@ import { NativeDateAdapter } from '@angular/material/core';
     MatSliderModule, MatCheckboxModule, MatButtonModule, MatIconButton, MatButtonToggleModule, MatIconModule],
   templateUrl: './control-panel.html',
   styleUrl: './control-panel.css',
-  // providers: [{ provide: NativeDateAdapter, useClass: CustomDateAdapter }]
+  providers: [
+    { provide: DateAdapter, useClass: CustomDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS }
+  ]
 })
 export class ControlPanel {
   @Output() dateSet: EventEmitter<Date | null> = new EventEmitter();
