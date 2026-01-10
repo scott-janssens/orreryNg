@@ -118,7 +118,6 @@ export class App {
 
   onDateSet(date: Date | null) {
     if (date) {
-      this._lastFrameTime = date;
       this._lastFrameJD = AA.juliandays.getJulianDay(date);
       this.calculateNextFrame()
     }

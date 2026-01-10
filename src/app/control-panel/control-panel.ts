@@ -78,11 +78,7 @@ export class ControlPanel {
   zoomDisplay: number = 1;
   displayOptions: DisplayOptions = new DisplayOptions();
 
-  constructor(private dialog: MatDialog) {
-    // this.dateControl.statusChanges.subscribe((value: FormControlStatus) => {
-    //   this.dateSet.emit(this.dateControl.value);
-    // });
-  }
+  constructor(private dialog: MatDialog) { }
   
   public onDateChange(event: MatDatepickerInputEvent<Date>): void {
     if (this._emitDateEvent) {
