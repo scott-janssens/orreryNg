@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Planet } from '../planet';
 import { DisplayOptions } from '../display-options';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 @Component({
   selector: 'ory-display',
@@ -9,62 +11,225 @@ import { DisplayOptions } from '../display-options';
   styleUrl: './display.css',
 })
 export class Display {
-  private _canvasCtx!: CanvasRenderingContext2D;
-  private _canvas!: HTMLCanvasElement;
+  private scene!: THREE.Scene;
+  private camera!: THREE.PerspectiveCamera;
+  private renderer!: THREE.WebGLRenderer;
+  private controls!: OrbitControls;
+  private sun!: THREE.Mesh;
+  private planetMeshes: Map<string, THREE.Mesh> = new Map();
+  private orbitLines: Map<string, THREE.Line> = new Map();
+  private labels: Map<string, HTMLDivElement> = new Map();
+  private container!: HTMLElement;
 
   public planets: Record<string, Planet> = {}
 
   ngAfterViewInit() {
-    this._canvas = document.getElementById('canvas') as HTMLCanvasElement;
-    this._canvas.width = window.innerWidth;
-    this._canvas.height = window.innerHeight;
-    this._canvasCtx = this._canvas.getContext("2d")!;
+    this.container = document.getElementById('canvas-container') as HTMLElement;
+    this.initThreeJS();
+    this.setupLighting();
+    this.createSun();
+    this.animate();
+
+    window.addEventListener('resize', () => this.onWindowResize());
 
     this.render(new DisplayOptions());
   }
 
+  ngOnDestroy() {
+    window.removeEventListener('resize', () => this.onWindowResize());
+    this.controls.dispose();
+    this.renderer.dispose();
+  }
+
+  private initThreeJS() {
+    // Scene
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x000000);
+
+    // Camera
+    this.camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      10000
+    );
+    this.camera.position.set(0, 200, 400);
+    this.camera.lookAt(0, 0, 0);
+
+    // Renderer
+    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.container.appendChild(this.renderer.domElement);
+
+    // Controls
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+    this.controls.minDistance = 50;
+    this.controls.maxDistance = 2000;
+  }
+
+  private setupLighting() {
+    // Ambient light
+    const ambientLight = new THREE.AmbientLight(0x333333);
+    this.scene.add(ambientLight);
+
+    // Point light from sun
+    const pointLight = new THREE.PointLight(0xffffff, 2, 0);
+    pointLight.position.set(0, 0, 0);
+    this.scene.add(pointLight);
+  }
+
+  private createSun() {
+    const geometry = new THREE.SphereGeometry(7, 32, 32);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xffff00,
+      emissive: 0xffaa00
+    });
+    this.sun = new THREE.Mesh(geometry, material);
+    this.scene.add(this.sun);
+  }
+
+  private animate() {
+    requestAnimationFrame(() => this.animate());
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+    this.updateLabels();
+  }
+
+  private onWindowResize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  private updateLabels() {
+    this.labels.forEach((label, planetName) => {
+      const mesh = this.planetMeshes.get(planetName);
+      if (mesh) {
+        const planet = this.planets[planetName];
+        const vector = new THREE.Vector3();
+        mesh.getWorldPosition(vector);
+        vector.project(this.camera);
+
+        const x = (vector.x * 0.5 + 0.5) * window.innerWidth + planet.radius + 2;
+        const y = (-vector.y * 0.5 + 0.5) * window.innerHeight - planet.radius - 2;
+
+        label.style.left = `${x}px`;
+        label.style.top = `${y - 10}px`;
+      }
+    });
+  }
+
   public render(options: DisplayOptions) {
-    this._canvasCtx = this._canvas.getContext("2d")!;
+    // Update zoom (camera distance)
+    const baseDistance = 400;
+    this.camera.position.setLength(baseDistance / options.zoom);
 
-    let cx = this._canvasCtx.canvas.width / 2;
-    let cy = this._canvasCtx.canvas.height / 2;
-    this._canvasCtx.clearRect(0, 0, this._canvasCtx.canvas.width, this._canvasCtx.canvas.height);
-
-    this._canvasCtx.lineWidth = 1;
-    this._canvasCtx.strokeStyle = "orange";
-    this._canvasCtx.fillStyle = "yellow";
-
-    this._canvasCtx.beginPath();
-    const solarRadius = 7 / options.zoom;
-    this._canvasCtx.ellipse(cx, cy, solarRadius, solarRadius, 0, 0, 2 * Math.PI);
-    this._canvasCtx.fill();
-    this._canvasCtx.stroke();
-
+    // Update or create planet meshes
     Object.values(this.planets).forEach(planet => {
+      // Update or create orbit line
       if (options.showOrbits) {
-        this._canvasCtx.strokeStyle = "#2f2f2f";
-        this._canvasCtx.beginPath();
-        this._canvasCtx.ellipse(cx, cy,
-          planet.orbit.semiMajorAxis * 50 / options.zoom, planet.orbit.semiMinorAxis * 50 / options.zoom,
-          0, 0, 2 * Math.PI);
-        this._canvasCtx.stroke();
+        if (!this.orbitLines.has(planet.name)) {
+          const curve = new THREE.EllipseCurve(
+            0, 0,
+            planet.orbit.semiMajorAxis * 50, planet.orbit.semiMinorAxis * 50,
+            0, 2 * Math.PI,
+            false,
+            0
+          );
+          const points = curve.getPoints(100);
+          const geometry = new THREE.BufferGeometry().setFromPoints(
+            points.map(p => new THREE.Vector3(p.x, 0, p.y))
+          );
+          const material = new THREE.LineBasicMaterial({ color: 0x2f2f2f });
+          const line = new THREE.Line(geometry, material);
+          this.scene.add(line);
+          this.orbitLines.set(planet.name, line);
+        }
+        this.orbitLines.get(planet.name)!.visible = true;
+      } else {
+        if (this.orbitLines.has(planet.name)) {
+          this.orbitLines.get(planet.name)!.visible = false;
+        }
       }
 
-      this._canvasCtx.fillStyle = planet.color
-      this._canvasCtx.beginPath();
-      planet.frameInfo.radius = options.scaledSizes ? Math.max(planet.size / 10000 / options.zoom, 1) : 2.5;
-      planet.frameInfo.jx = cx + planet.orbit.semiMajorAxis * 50 / options.zoom * Math.cos(planet.longitude * Math.PI / 180);
-      planet.frameInfo.jy = cy - planet.orbit.semiMinorAxis * 50 / options.zoom * Math.sin(planet.longitude * Math.PI / 180);;
-      this._canvasCtx.ellipse(planet.frameInfo.jx, planet.frameInfo.jy, planet.frameInfo.radius, planet.frameInfo.radius, 0, 0, 2 * Math.PI);
-      this._canvasCtx.fill();
+      // Update or create planet mesh
+      if (!this.planetMeshes.has(planet.name)) {
+        const radius = options.scaledSizes ? Math.max(planet.size / 10000, 1) : 2.5;
+        const geometry = new THREE.SphereGeometry(radius, 32, 32);
+        const material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(planet.color),
+          emissive: new THREE.Color(planet.color),
+          emissiveIntensity: 0.4,
+          metalness: 0.2,
+          roughness: 0.7
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        this.scene.add(mesh);
+        this.planetMeshes.set(planet.name, mesh);
+      }
+
+      // Update planet position
+      const mesh = this.planetMeshes.get(planet.name)!;
+      planet.radius = options.scaledSizes ? Math.max(planet.size / 10000, 1) : 2.5;
+      (mesh.geometry as THREE.SphereGeometry).dispose();
+      mesh.geometry = new THREE.SphereGeometry(planet.radius, 32, 32);
+
+      // Update planet color
+      const material = mesh.material as THREE.MeshStandardMaterial;
+      material.color.set(planet.color);
+      material.emissive.set(planet.color);
+      material.emissiveIntensity = 0.4;
+
+      const x = planet.orbit.semiMajorAxis * 50 * Math.cos(planet.longitude * Math.PI / 180);
+      const z = -planet.orbit.semiMinorAxis * 50 * Math.sin(planet.longitude * Math.PI / 180);
+      mesh.position.set(x, 0, z);
+
+      // Update labels
+      if (options.showLabels) {
+        if (!this.labels.has(planet.name)) {
+          const label = document.createElement('div');
+          label.className = 'planet-label';
+          label.textContent = planet.name;
+          label.style.position = 'absolute';
+          label.style.color = '#ffffff';
+          label.style.fontSize = '12px';
+          label.style.pointerEvents = 'none';
+
+          this.container.appendChild(label);
+          this.labels.set(planet.name, label);
+        }
+        const label = this.labels.get(planet.name)!;
+        label.style.display = 'block';
+      } else {
+        if (this.labels.has(planet.name)) {
+          this.labels.get(planet.name)!.style.display = 'none';
+        }
+      }
     });
 
-    if (options.showLabels) {
-      Object.values(this.planets).forEach(planet => {
-        this._canvasCtx.fillStyle = "Darkgray";
-        this._canvasCtx.font = `${Math.min(16, Math.max(10, 12 / options.zoom))}px Arial`;
-        this._canvasCtx.fillText(planet.name, planet.frameInfo.jx + planet.frameInfo.radius, planet.frameInfo.jy - planet.frameInfo.radius);
-      });
-    }
+    // Remove planets that no longer exist
+    this.planetMeshes.forEach((mesh, name) => {
+      if (!this.planets[name]) {
+        this.scene.remove(mesh);
+        mesh.geometry.dispose();
+        (mesh.material as THREE.Material).dispose();
+        this.planetMeshes.delete(name);
+
+        if (this.orbitLines.has(name)) {
+          const line = this.orbitLines.get(name)!;
+          this.scene.remove(line);
+          line.geometry.dispose();
+          (line.material as THREE.Material).dispose();
+          this.orbitLines.delete(name);
+        }
+
+        if (this.labels.has(name)) {
+          this.labels.get(name)!.remove();
+          this.labels.delete(name);
+        }
+      }
+    });
   }
 }

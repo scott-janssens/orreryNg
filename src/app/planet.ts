@@ -1,4 +1,3 @@
-import { FrameInfo } from "./frame-info";
 import { Orbit } from "./orbit";
 
 export interface Planet {
@@ -7,5 +6,5 @@ export interface Planet {
     size: number;
     orbit: Orbit;
     longitude: number;
-    frameInfo: FrameInfo;
+    radius: number;
 }

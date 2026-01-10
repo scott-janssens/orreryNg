@@ -34,11 +34,7 @@ export class App {
         semiMinorAxis: b,
         eccentricity: e
       },
-      frameInfo: {
-        radius: 0,
-        jx: 0,
-        jy: 0
-      },
+      radius: 0,
       longitude: AA.Earth.getEclipticLongitude(this._lastFrameJD)
     };
 
@@ -64,11 +60,7 @@ export class App {
         semiMinorAxis: b,
         eccentricity: e
       },
-      frameInfo: {
-        radius: 0,
-        jx: 0,
-        jy: 0
-      },
+      radius: 0,
       longitude: planet.getEclipticLongitude(this._lastFrameJD)
     };
   }
