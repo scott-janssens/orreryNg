@@ -22,6 +22,7 @@ export class Display {
   private container!: HTMLElement;
 
   public planets: Record<string, Planet> = {}
+  private currentOptions: DisplayOptions = new DisplayOptions();
 
   ngAfterViewInit() {
     this.container = document.getElementById('canvas-container') as HTMLElement;
@@ -31,14 +32,31 @@ export class Display {
     this.animate();
 
     window.addEventListener('resize', () => this.onWindowResize());
+    this.renderer.domElement.addEventListener('wheel', (event) => this.onWheel(event), { passive: false });
 
     this.render(new DisplayOptions());
   }
 
   ngOnDestroy() {
     window.removeEventListener('resize', () => this.onWindowResize());
+    this.renderer.domElement.removeEventListener('wheel', (event) => this.onWheel(event));
     this.controls.dispose();
     this.renderer.dispose();
+  }
+
+  private onWheel(event: WheelEvent) {
+    event.preventDefault();
+    
+    // Adjust zoom based on wheel delta
+    const zoomSpeed = 0.001;
+    const delta = event.deltaY * zoomSpeed;
+    
+    // Update zoom (clamp between 0.1 and 5)
+    this.currentOptions.zoom = Math.max(0.1, Math.min(5, this.currentOptions.zoom + delta));
+    
+    // Update camera distance
+    const baseDistance = 400;
+    this.camera.position.setLength(baseDistance / this.currentOptions.zoom);
   }
 
   private initThreeJS() {
@@ -122,6 +140,9 @@ export class Display {
   }
 
   public render(options: DisplayOptions) {
+    // Store current options
+    this.currentOptions = options;
+    
     // Update zoom (camera distance)
     const baseDistance = 400;
     this.camera.position.setLength(baseDistance / options.zoom);
