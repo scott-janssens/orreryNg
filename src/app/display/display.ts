@@ -313,15 +313,20 @@ export class Display {
         material.emissiveIntensity = 0.4;
       }
 
-      const x = planet.orbit.semiMajorAxis * 50 * Math.cos(planet.longitude * Math.PI / 180);
-      const z = -planet.orbit.semiMinorAxis * 50 * Math.sin(planet.longitude * Math.PI / 180);
+      // Convert ecliptic longitude to true anomaly
+      // True anomaly is the angle from perihelion, ecliptic longitude is from vernal equinox
+      const longitudeOfPerihelion = planet.orbit.longitudeOfPerihelion || 0;
+      const trueAnomaly = planet.longitude - longitudeOfPerihelion;
       
-      // Create position vector in the ecliptic plane (XZ)
+      // Calculate position in orbital plane using true anomaly
+      const x = planet.orbit.semiMajorAxis * 50 * Math.cos(trueAnomaly * Math.PI / 180);
+      const z = -planet.orbit.semiMinorAxis * 50 * Math.sin(trueAnomaly * Math.PI / 180);
+      
+      // Create position vector in the orbital plane
       let position = new THREE.Vector3(x, 0, z);
       
-      // Apply rotation for longitude of perihelion (argument of periapsis) around Y axis (ecliptic pole)
-      const argPeriapsis = (planet.orbit.longitudeOfPerihelion || 0) - (planet.orbit.longitudeOfAscendingNode || 0);
-      position.applyAxisAngle(new THREE.Vector3(0, 1, 0), argPeriapsis * Math.PI / 180);
+      // Rotate to align perihelion with the correct ecliptic longitude
+      position.applyAxisAngle(new THREE.Vector3(0, 1, 0), longitudeOfPerihelion * Math.PI / 180);
       
       // Apply longitude of ascending node to determine the tilt axis
       const longitudeOfAscendingNode = planet.orbit.longitudeOfAscendingNode || 0;
