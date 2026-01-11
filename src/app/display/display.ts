@@ -100,12 +100,32 @@ export class Display {
 
   private createSun() {
     const geometry = new THREE.SphereGeometry(7, 32, 32);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffff00,
-      emissive: 0xffaa00
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffff00
     });
     this.sun = new THREE.Mesh(geometry, material);
     this.scene.add(this.sun);
+
+    // Load texture asynchronously
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.setCrossOrigin('anonymous');
+    textureLoader.load(
+      '/textures/sun.jpg',
+      (texture) => {
+        console.log('Sun texture loaded successfully');
+        texture.colorSpace = THREE.SRGBColorSpace;
+        material.map = texture;
+        material.needsUpdate = true;
+        this.renderer.render(this.scene, this.camera);
+      },
+      (progress) => {
+        console.log('Loading sun texture:', progress);
+      },
+      (error) => {
+        console.error('Error loading sun texture:', error);
+        console.log('Using fallback yellow color for sun');
+      }
+    );
   }
 
   private animate() {
@@ -210,6 +230,28 @@ export class Display {
         const mesh = new THREE.Mesh(geometry, material);
         this.scene.add(mesh);
         this.planetMeshes.set(planet.name, mesh);
+
+        // Load texture asynchronously
+        const textureLoader = new THREE.TextureLoader();
+        const textureName = planet.name.toLowerCase().replace(' ', '') + '.jpg';
+        textureLoader.setCrossOrigin('anonymous');
+        textureLoader.load(
+          `/textures/${textureName}`,
+          (texture) => {
+            console.log(`${planet.name} texture loaded successfully`);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            material.map = texture;
+            material.emissiveMap = texture; // Use texture for emissive too
+            material.color.set(0xffffff); // Set to white so texture shows correctly
+            material.emissive.set(0xffffff); // White multiplier for emissive map
+            material.emissiveIntensity = 0.5; // Moderate intensity for visibility
+            material.needsUpdate = true;
+          },
+          undefined,
+          (error) => {
+            console.log(`No texture found for ${planet.name}, using color fallback`);
+          }
+        );
       }
 
       // Update planet position
@@ -218,11 +260,13 @@ export class Display {
       (mesh.geometry as THREE.SphereGeometry).dispose();
       mesh.geometry = new THREE.SphereGeometry(planet.radius, 32, 32);
 
-      // Update planet color
+      // Update planet color only if no texture is loaded
       const material = mesh.material as THREE.MeshStandardMaterial;
-      material.color.set(planet.color);
-      material.emissive.set(planet.color);
-      material.emissiveIntensity = 0.4;
+      if (!material.map) {
+        material.color.set(planet.color);
+        material.emissive.set(planet.color);
+        material.emissiveIntensity = 0.4;
+      }
 
       const x = planet.orbit.semiMajorAxis * 50 * Math.cos(planet.longitude * Math.PI / 180);
       const z = -planet.orbit.semiMinorAxis * 50 * Math.sin(planet.longitude * Math.PI / 180);
