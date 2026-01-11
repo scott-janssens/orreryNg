@@ -1,0 +1,48 @@
+.about-content {
+  max-width: 600px;
+  padding: 1rem 0;
+}
+
+.about-content h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: darkorange;
+}
+
+.about-content h3:first-child {
+  margin-top: 0;
+}
+
+.about-content p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.about-content ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.8;
+}
+
+.about-content ul.links {
+  list-style: none;
+  padding-left: 0;
+}
+
+.about-content ul.links li {
+  margin: 0.5rem 0;
+}
+
+.about-content a {
+  color: #3f51b5;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.about-content a:hover {
+  text-decoration: underline;
+}
+
+mat-dialog-actions {
+  padding: 1rem 1.5rem;
+}

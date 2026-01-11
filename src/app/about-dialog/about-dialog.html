@@ -1,1 +1,48 @@
-<p>about-dialog works!</p>
+<h2 mat-dialog-title>About Orrery</h2>
+<mat-dialog-content>
+    <div class="about-content">
+        <h3>What is an Orrery?</h3>
+        <p>
+            An orrery is a mechanical model of the solar system that illustrates the relative positions
+            and motions of the planets and moons. This digital orrery provides an interactive 3D
+            visualization of our solar system using accurate astronomical calculations.
+        </p>
+        <p>
+            <a href="https://en.wikipedia.org/wiki/Orrery" target="_blank" rel="noopener noreferrer">
+                Learn more about orreries on Wikipedia
+            </a>
+        </p>
+
+        <h3>Technologies</h3>
+        <ul>
+            <li>
+                <a href="https://angular.dev" target="_blank" rel="noopener noreferrer">Angular</a>
+                {{ angularVersion }}
+            </li>
+            <li>
+                <a href="https://material.angular.io" target="_blank" rel="noopener noreferrer">Angular Material</a>
+                for UI components
+            </li>
+            <li>
+                <a href="https://onekiloparsec.dev/aa-js/" target="_blank" rel="noopener noreferrer">AA-JS</a>
+                for astronomical calculations
+            </li>
+            <li>
+                <a href="https://threejs.org" target="_blank" rel="noopener noreferrer">Three.js</a>
+                for 3D rendering
+            </li>
+        </ul>
+
+        <h3>Links</h3>
+        <ul class="links">
+            <li>
+                <a href="https://github.com/scott-janssens/orreryNg" target="_blank" rel="noopener noreferrer">
+                    Orrery GitHub Repository
+                </a>
+            </li>
+        </ul>
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>
