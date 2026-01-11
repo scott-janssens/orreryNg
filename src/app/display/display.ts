@@ -17,6 +17,7 @@ export class Display {
   private controls!: OrbitControls;
   private sun!: THREE.Mesh;
   private planetMeshes: Map<string, THREE.Mesh> = new Map();
+  private planetRings: Map<string, THREE.Mesh> = new Map();
   private orbitLines: Map<string, THREE.Line> = new Map();
   private labels: Map<string, HTMLDivElement> = new Map();
   private container!: HTMLElement;
@@ -252,6 +253,50 @@ export class Display {
             console.log(`No texture found for ${planet.name}, using color fallback`);
           }
         );
+
+        // Create rings for Saturn
+        if (planet.name === 'Saturn') {
+          const innerRadius = radius * 1.5;
+          const outerRadius = radius * 2.5;
+          const ringGeometry = new THREE.RingGeometry(innerRadius, outerRadius, 64);
+          
+          // Rotate ring geometry to be horizontal
+          ringGeometry.rotateX(-Math.PI / 2);
+          
+          const ringMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.9,
+            metalness: 0.1,
+            roughness: 0.8
+          });
+          
+          const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+          this.scene.add(ringMesh);
+          this.planetRings.set(planet.name, ringMesh);
+          
+          // Load ring texture
+          const ringTextureLoader = new THREE.TextureLoader();
+          ringTextureLoader.setCrossOrigin('anonymous');
+          ringTextureLoader.load(
+            '/textures/rings.png',
+            (texture) => {
+              console.log('Saturn rings texture loaded successfully');
+              texture.colorSpace = THREE.SRGBColorSpace;
+              ringMaterial.map = texture;
+              ringMaterial.emissiveMap = texture; // Use texture for emissive too
+              ringMaterial.color.set(0xffffff); // Set to white so texture shows correctly
+              ringMaterial.emissive.set(0xffffff); // White multiplier for emissive map
+              ringMaterial.emissiveIntensity = 0.5; // Moderate intensity for visibility
+              ringMaterial.needsUpdate = true;
+            },
+            undefined,
+            (error) => {
+              console.log('No texture found for Saturn rings, using color fallback');
+            }
+          );
+        }
       }
 
       // Update planet position
@@ -287,6 +332,20 @@ export class Display {
       position.applyAxisAngle(nodeAxis, inclination * Math.PI / 180);
       
       mesh.position.set(position.x, position.y, position.z);
+
+      // Update ring position if planet has rings
+      if (this.planetRings.has(planet.name)) {
+        const ringMesh = this.planetRings.get(planet.name)!;
+        ringMesh.position.copy(mesh.position);
+        
+        // Update ring size based on planet radius
+        const innerRadius = planet.radius * 1.5;
+        const outerRadius = planet.radius * 2.5;
+        ringMesh.geometry.dispose();
+        const newRingGeometry = new THREE.RingGeometry(innerRadius, outerRadius, 64);
+        newRingGeometry.rotateX(-Math.PI / 2);
+        ringMesh.geometry = newRingGeometry;
+      }
 
       // Update labels
       if (options.showLabels) {
@@ -325,6 +384,14 @@ export class Display {
           line.geometry.dispose();
           (line.material as THREE.Material).dispose();
           this.orbitLines.delete(name);
+        }
+
+        if (this.planetRings.has(name)) {
+          const ring = this.planetRings.get(name)!;
+          this.scene.remove(ring);
+          ring.geometry.dispose();
+          (ring.material as THREE.Material).dispose();
+          this.planetRings.delete(name);
         }
 
         if (this.labels.has(name)) {
