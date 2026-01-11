@@ -152,6 +152,7 @@ export class Display {
       // Update or create orbit line
       if (options.showOrbits) {
         if (!this.orbitLines.has(planet.name)) {
+          // Create ellipse in the orbital plane
           const curve = new THREE.EllipseCurve(
             0, 0,
             planet.orbit.semiMajorAxis * 50, planet.orbit.semiMinorAxis * 50,
@@ -160,9 +161,29 @@ export class Display {
             0
           );
           const points = curve.getPoints(100);
-          const geometry = new THREE.BufferGeometry().setFromPoints(
-            points.map(p => new THREE.Vector3(p.x, 0, p.y))
-          );
+          
+          // Convert 2D ellipse points to 3D and apply orbital transformations
+          const orbitPoints = points.map(p => {
+            // Start with ellipse in XZ plane (ecliptic)
+            let vec = new THREE.Vector3(p.x, 0, p.y);
+            
+            // Apply rotation for longitude of perihelion (argument of periapsis)
+            // This rotates the ellipse within its orbital plane around Y axis (ecliptic pole)
+            const argPeriapsis = (planet.orbit.longitudeOfPerihelion || 0) - (planet.orbit.longitudeOfAscendingNode || 0);
+            vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), argPeriapsis * Math.PI / 180);
+            
+            // Apply longitude of ascending node first (rotate around the ecliptic pole Y axis)
+            const longitudeOfAscendingNode = planet.orbit.longitudeOfAscendingNode || 0;
+            const nodeAxis = new THREE.Vector3(Math.cos(longitudeOfAscendingNode * Math.PI / 180), 0, Math.sin(longitudeOfAscendingNode * Math.PI / 180));
+            
+            // Apply inclination (tilt the orbital plane around the line of nodes)
+            const inclination = planet.orbit.inclination || 0;
+            vec.applyAxisAngle(nodeAxis, inclination * Math.PI / 180);
+            
+            return vec;
+          });
+          
+          const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
           const material = new THREE.LineBasicMaterial({ color: 0x2f2f2f });
           const line = new THREE.Line(geometry, material);
           this.scene.add(line);
@@ -205,7 +226,23 @@ export class Display {
 
       const x = planet.orbit.semiMajorAxis * 50 * Math.cos(planet.longitude * Math.PI / 180);
       const z = -planet.orbit.semiMinorAxis * 50 * Math.sin(planet.longitude * Math.PI / 180);
-      mesh.position.set(x, 0, z);
+      
+      // Create position vector in the ecliptic plane (XZ)
+      let position = new THREE.Vector3(x, 0, z);
+      
+      // Apply rotation for longitude of perihelion (argument of periapsis) around Y axis (ecliptic pole)
+      const argPeriapsis = (planet.orbit.longitudeOfPerihelion || 0) - (planet.orbit.longitudeOfAscendingNode || 0);
+      position.applyAxisAngle(new THREE.Vector3(0, 1, 0), argPeriapsis * Math.PI / 180);
+      
+      // Apply longitude of ascending node to determine the tilt axis
+      const longitudeOfAscendingNode = planet.orbit.longitudeOfAscendingNode || 0;
+      const nodeAxis = new THREE.Vector3(Math.cos(longitudeOfAscendingNode * Math.PI / 180), 0, Math.sin(longitudeOfAscendingNode * Math.PI / 180));
+      
+      // Apply inclination (tilt the orbital plane around the line of nodes)
+      const inclination = planet.orbit.inclination || 0;
+      position.applyAxisAngle(nodeAxis, inclination * Math.PI / 180);
+      
+      mesh.position.set(position.x, position.y, position.z);
 
       // Update labels
       if (options.showLabels) {

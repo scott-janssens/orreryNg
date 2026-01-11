@@ -32,7 +32,10 @@ export class App {
       orbit: {
         semiMajorAxis: 1,
         semiMinorAxis: b,
-        eccentricity: e
+        eccentricity: e,
+        inclination: 0,
+        longitudeOfAscendingNode: 0,
+        longitudeOfPerihelion: 0
       },
       radius: 0,
       longitude: AA.Earth.getEclipticLongitude(this._lastFrameJD)
@@ -58,7 +61,10 @@ export class App {
       orbit: {
         semiMajorAxis: semiMajorAxis,
         semiMinorAxis: b,
-        eccentricity: e
+        eccentricity: e,
+        inclination: planet.getInclination(this._lastFrameJD),
+        longitudeOfAscendingNode: planet.getLongitudeOfAscendingNode(this._lastFrameJD),
+        longitudeOfPerihelion: planet.getLongitudeOfPerihelion(this._lastFrameJD)
       },
       radius: 0,
       longitude: planet.getEclipticLongitude(this._lastFrameJD)
