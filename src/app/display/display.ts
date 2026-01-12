@@ -111,7 +111,7 @@ export class Display {
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous');
     textureLoader.load(
-      '/textures/sun.jpg',
+      './textures/sun.jpg',
       (texture) => {
         console.log('Sun texture loaded successfully');
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -205,7 +205,7 @@ export class Display {
           });
           
           const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-          const material = new THREE.LineBasicMaterial({ color: 0x2f2f2f });
+          const material = new THREE.LineBasicMaterial({ color: 0x3f3f3f3f });
           const line = new THREE.Line(geometry, material);
           this.scene.add(line);
           this.orbitLines.set(planet.name, line);
@@ -237,7 +237,7 @@ export class Display {
         const textureName = planet.name.toLowerCase().replace(' ', '') + '.jpg';
         textureLoader.setCrossOrigin('anonymous');
         textureLoader.load(
-          `/textures/${textureName}`,
+          `./textures/${textureName}`,
           (texture) => {
             console.log(`${planet.name} texture loaded successfully`);
             texture.colorSpace = THREE.SRGBColorSpace;
@@ -280,7 +280,7 @@ export class Display {
           const ringTextureLoader = new THREE.TextureLoader();
           ringTextureLoader.setCrossOrigin('anonymous');
           ringTextureLoader.load(
-            '/textures/rings.png',
+            './textures/rings.png',
             (texture) => {
               console.log('Saturn rings texture loaded successfully');
               texture.colorSpace = THREE.SRGBColorSpace;
